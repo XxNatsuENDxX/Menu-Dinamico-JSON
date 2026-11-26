@@ -31,13 +31,14 @@ El proyecto puede desplegarse como una página estática en GitHub Pages, Vercel
 - Identificadores únicos generados automáticamente.
 - Validación de nombre y enlaces.
 - Persistencia local con `localStorage`.
+- Los cambios guardados localmente se cargan antes que `menu.json`; usa **Restaurar JSON** para volver a las opciones originales.
 - Menú móvil responsive y accesible.
 - Control para decidir si cada opción aparece en el navbar.
 - Restauración de las opciones originales desde `menu.json`.
 
 ## Formato JSON
 
-Cada opción puede incluir `id`, `nombre`, `enlace`, `icono` y una lista `hijos`. Las opciones sin submenús pueden conservar `hijos: []`.
+Cada opción puede incluir `id`, `nombre`, `enlace`, `icono`, `mostrarEnMenu` y una lista `hijos`. `mostrarEnMenu: false` mantiene la opción en el administrador, pero la oculta del navbar; si se omite, la opción se muestra. Las opciones sin submenús pueden conservar `hijos: []`.
 
 ## Uso de Inteligencia Artificial
 
