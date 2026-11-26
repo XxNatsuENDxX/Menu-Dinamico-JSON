@@ -1,4 +1,4 @@
-const STORAGE_KEY = "menu-dinamico-json";
+const STORAGE_KEY = "menu-dinamico-json-v3";
 
 const navigationList = document.querySelector("#navigation-list");
 const menuToggle = document.querySelector("#menu-toggle");
@@ -8,6 +8,7 @@ const formTitle = document.querySelector("#form-title");
 const editId = document.querySelector("#edit-id");
 const nameInput = document.querySelector("#menu-name");
 const linkInput = document.querySelector("#menu-link");
+const visibleInput = document.querySelector("#menu-visible");
 const iconInput = document.querySelector("#menu-icon");
 const parentInput = document.querySelector("#menu-parent");
 const formError = document.querySelector("#form-error");
@@ -160,7 +161,16 @@ function createNavigationGroup(item) {
 
 function renderNavigation() {
   navigationList.replaceChildren();
-  menuItems.forEach((item) => {
+  const visibleItems = menuItems
+    .filter((item) => item.mostrarEnMenu !== false)
+    .map((item) => ({
+      ...item,
+      hijos: (item.hijos ?? []).filter((child) => child.mostrarEnMenu !== false),
+    }));
+  const hasItems = visibleItems.length > 0;
+  primaryNavigation.hidden = !hasItems;
+  menuToggle.hidden = !hasItems;
+  visibleItems.forEach((item) => {
     const listItem = (item.hijos ?? []).length
       ? createNavigationGroup(item)
       : document.createElement("li");
@@ -174,7 +184,7 @@ function updateParentOptions() {
   const editingId = Number(editId.value);
   parentInput.replaceChildren();
   parentInput.append(new Option("Ninguna (nivel principal)", ""));
-  flattenItems().forEach((item) => {
+  flattenItems().filter((item) => item.mostrarEnMenu !== false).forEach((item) => {
     if (item.id === editingId) return;
     const descendants = flattenItems(item.hijos ?? []);
     if (editingId && descendants.some((descendant) => descendant.id === editingId)) return;
@@ -183,6 +193,9 @@ function updateParentOptions() {
 }
 
 function createTreeItem(item, level = 0) {
+  const group = document.createElement("div");
+  group.className = "menu-tree-group";
+
   const row = document.createElement("div");
   row.className = "menu-tree-item";
   row.style.setProperty("--level", String(level));
@@ -214,10 +227,14 @@ function createTreeItem(item, level = 0) {
 
   row.append(icon, copy, actions);
 
+  group.append(row);
   if (item.hijos?.length) {
-    item.hijos.forEach((child) => row.append(createTreeItem(child, level + 1)));
+    const children = document.createElement("div");
+    children.className = "menu-tree-children";
+    item.hijos.forEach((child) => children.append(createTreeItem(child, level + 1)));
+    group.append(children);
   }
-  return row;
+  return group;
 }
 
 function renderMenuTree() {
@@ -239,6 +256,7 @@ function beginEdit(item) {
   editId.value = String(item.id);
   nameInput.value = item.nombre;
   linkInput.value = item.enlace;
+  visibleInput.checked = item.mostrarEnMenu !== false;
   iconInput.value = item.icono ?? "";
   formTitle.textContent = "Modificar opción";
   cancelEdit.hidden = false;
@@ -274,6 +292,7 @@ form.addEventListener("submit", (event) => {
 
   const name = sanitizeText(nameInput.value);
   const link = linkInput.value.trim();
+  const visible = visibleInput.checked;
   const icon = sanitizeText(iconInput.value);
 
   if (!name) {
@@ -303,6 +322,7 @@ form.addEventListener("submit", (event) => {
     removeItem(editingId);
     existing.nombre = name;
     existing.enlace = link;
+    existing.mostrarEnMenu = visible;
     existing.icono = icon;
     existing.hijos ??= [];
 
@@ -316,7 +336,14 @@ form.addEventListener("submit", (event) => {
     setStatus(`Se modificó "${name}".`);
   } else {
     const nextId = flattenItems().reduce((highest, item) => Math.max(highest, item.id), 0) + 1;
-    const newItem = { id: nextId, nombre: name, enlace: link, icono: icon, hijos: [] };
+    const newItem = {
+      id: nextId,
+      nombre: name,
+      enlace: link,
+      icono: icon,
+      mostrarEnMenu: visible,
+      hijos: [],
+    };
 
     if (parentId) {
       const parent = findItem(parentId);

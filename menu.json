@@ -3,45 +3,27 @@
     {
       "id": 1,
       "nombre": "Inicio",
-      "enlace": "/inicio",
+      "enlace": "#inicio",
       "icono": "⌂",
+      "mostrarEnMenu": false,
       "hijos": []
     },
     {
       "id": 2,
-      "nombre": "Sobre Nosotros",
-      "enlace": "/sobre-nosotros",
-      "icono": "i",
-      "hijos": []
-    },
-    {
-      "id": 3,
-      "nombre": "Servicios",
-      "enlace": "/servicios",
-      "icono": "◆",
+      "nombre": "Administración",
+      "enlace": "#administrador",
+      "icono": "⚙",
+      "mostrarEnMenu": false,
       "hijos": [
         {
-          "id": 31,
-          "nombre": "Diseño",
-          "enlace": "/servicios/diseno",
-          "icono": "✦",
-          "hijos": []
-        },
-        {
-          "id": 32,
-          "nombre": "Desarrollo",
-          "enlace": "/servicios/desarrollo",
-          "icono": "</>",
+          "id": 21,
+          "nombre": "Opciones del menú",
+          "enlace": "#administrador",
+          "icono": "☰",
+          "mostrarEnMenu": false,
           "hijos": []
         }
       ]
-    },
-    {
-      "id": 4,
-      "nombre": "Contacto",
-      "enlace": "/contacto",
-      "icono": "@",
-      "hijos": []
     }
   ]
 }

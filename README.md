@@ -21,7 +21,7 @@ El proyecto puede desplegarse como una página estática en GitHub Pages, Vercel
 - `index.html`: estructura y regiones accesibles de la página.
 - `styles.css`: identidad visual adaptable a escritorio y móvil.
 - `app.js`: carga el JSON, genera el menú y administra las opciones.
-- `menu.json`: estructura editable que contiene las opciones del menú.
+- `menu.json`: estructura editable con opciones de ejemplo ocultas inicialmente del navbar.
 
 ## Funcionalidades
 
@@ -32,6 +32,7 @@ El proyecto puede desplegarse como una página estática en GitHub Pages, Vercel
 - Validación de nombre y enlaces.
 - Persistencia local con `localStorage`.
 - Menú móvil responsive y accesible.
+- Control para decidir si cada opción aparece en el navbar.
 - Restauración de las opciones originales desde `menu.json`.
 
 ## Formato JSON
