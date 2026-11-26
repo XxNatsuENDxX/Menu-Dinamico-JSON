@@ -1,0 +1,18 @@
+{
+  "name": "pokeatlas-pruebas-automatizadas",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pruebas de interfaz y API para PokéAtlas con Playwright",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test tests/ui",
+    "test:api": "playwright test tests/api",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1"
+  }
+}
