@@ -1,6 +1,6 @@
-# PokéAtlas
+# Menú dinámico
 
-PokéAtlas es una Pokédex web en español con menú dinámico y datos obtenidos en tiempo real de [PokéAPI](https://pokeapi.co/). La colección inicial incluye los primeros 151 Pokémon. Se puede explorar por rangos, filtrar por tipo, buscar por nombre o número, guardar favoritos y abrir una ficha con nombre en español, descripción, tipos, medidas y estadísticas.
+Ejercicio de menú dinámico desarrollado con HTML, CSS y JavaScript. Las opciones se cargan desde `menu.json` y pueden administrarse desde la interfaz sin modificar el código fuente.
 
 ## Ejecutar localmente
 
@@ -12,38 +12,32 @@ python -m http.server 8000
 
 Abre <http://localhost:8000>. También puedes usar la extensión Live Server de Visual Studio Code.
 
-## Publicar en Vercel
+## Publicar
 
-Sube el proyecto a un repositorio público de GitHub e impórtalo en Vercel. Selecciona **Other** como framework y deja vacíos el comando de compilación y el directorio de salida. Es una página estática: no requiere `vercel.json`, servidor propio ni clave de API. El navegador consulta PokéAPI directamente; por eso la aplicación necesita conexión a internet.
+El proyecto puede desplegarse como una página estática en GitHub Pages, Vercel o Netlify. No necesita claves, servidor propio ni consumo de API.
 
 ## Estructura
 
 - `index.html`: estructura y regiones accesibles de la página.
 - `styles.css`: identidad visual adaptable a escritorio y móvil.
-- `app.js`: consulta PokéAPI, genera la navegación, filtra la colección y crea las fichas.
+- `app.js`: carga el JSON, genera el menú y administra las opciones.
+- `menu.json`: estructura editable que contiene las opciones del menú.
 
-## Uso de PokéAPI y menú dinámico
+## Funcionalidades
 
-La aplicación hace solicitudes `GET` a la API REST pública:
+- Generación dinámica del menú desde JSON.
+- Submenús configurables.
+- Agregar, editar y eliminar opciones desde el navegador.
+- Identificadores únicos generados automáticamente.
+- Validación de nombre y enlaces.
+- Persistencia local con `localStorage`.
+- Menú móvil responsive y accesible.
+- Restauración de las opciones originales desde `menu.json`.
 
-- `/pokemon?limit=151`: construye la colección del menú y las tarjetas.
-- `/type`: genera dinámicamente las opciones del submenú de tipos.
-- `/type/{tipo}`: obtiene los Pokémon de un tipo elegido.
-- `/pokemon/{id}` y `/pokemon-species/{id}`: cargan los detalles y textos en español al abrir una ficha.
+## Formato JSON
 
-PokéAPI entrega respuestas JSON. Los rangos del submenú se generan a partir de la lista recibida; los tipos se generan con la respuesta del endpoint `/type`. Los favoritos se guardan localmente en el navegador.
-
-## Conceptos de intercambio de datos
-
-- **API (interfaz de programación de aplicaciones):** reglas y puntos de acceso que permiten a programas solicitar datos o servicios de otros programas.
-- **REST:** estilo para diseñar API sobre HTTP, con recursos identificados por URL y métodos como `GET`. PokéAPI ofrece una API REST.
-- **SOAP:** protocolo formal de intercambio de mensajes estructurados, normalmente en XML.
-- **JSON:** formato de texto basado en objetos y listas, frecuente en API web. PokéAPI lo utiliza para enviar sus respuestas.
-- **XML:** formato de datos estructurados con etiquetas; también se utiliza en servicios SOAP.
-- **GraphQL:** lenguaje de consulta de API que permite solicitar campos específicos; el servidor suele responder con JSON.
-
-API describe cómo se comunican los sistemas; REST, SOAP y GraphQL son enfoques/protocolos para ofrecer o consultar datos. JSON y XML son formatos para representar e intercambiar esos datos.
+Cada opción puede incluir `id`, `nombre`, `enlace`, `icono` y una lista `hijos`. Las opciones sin submenús pueden conservar `hijos: []`.
 
 ## Uso de Inteligencia Artificial
 
-Se utilizó Inteligencia Artificial como apoyo para estructurar la aplicación, implementar la integración con PokéAPI y revisar su interfaz. El código y la información deben ser revisados y comprendidos antes de la entrega.
+Se utilizó Inteligencia Artificial como apoyo para estructurar la aplicación y revisar su interfaz. El código y la información deben ser revisados y comprendidos antes de la entrega.

@@ -1,167 +1,74 @@
-const API_BASE = "https://pokeapi.co/api/v2";
-const PAGE_SIZE = 24;
-const FIRST_GENERATION_SIZE = 151;
+const STORAGE_KEY = "menu-dinamico-json";
 
 const navigationList = document.querySelector("#navigation-list");
-const pokemonGrid = document.querySelector("#pokemon-grid");
-const resultsOverline = document.querySelector("#results-overline");
-const resultsTitle = document.querySelector("#results-title");
-const resultsCount = document.querySelector("#results-count");
-const pagination = document.querySelector("#pagination");
-const searchInput = document.querySelector("#pokemon-search");
-const statusMessage = document.querySelector("#status-message");
 const menuToggle = document.querySelector("#menu-toggle");
 const primaryNavigation = document.querySelector("#primary-navigation");
-const pokemonDialog = document.querySelector("#pokemon-dialog");
-const pokemonDetail = document.querySelector("#pokemon-detail");
+const form = document.querySelector("#menu-form");
+const formTitle = document.querySelector("#form-title");
+const editId = document.querySelector("#edit-id");
+const nameInput = document.querySelector("#menu-name");
+const linkInput = document.querySelector("#menu-link");
+const iconInput = document.querySelector("#menu-icon");
+const parentInput = document.querySelector("#menu-parent");
+const formError = document.querySelector("#form-error");
+const cancelEdit = document.querySelector("#cancel-edit");
+const resetMenu = document.querySelector("#reset-menu");
+const menuTree = document.querySelector("#menu-tree");
+const statusMessage = document.querySelector("#status-message");
 
-const state = {
-  pokemon: [],
-  types: [],
-  typePokemon: [],
-  typeCache: new Map(),
-  favorites: new Set(),
-  currentView: { kind: "collection", start: 1, end: FIRST_GENERATION_SIZE },
-  currentPage: 1,
-  searchTerm: "",
-  requestId: 0,
-};
-
-const typeLabels = {
-  bug: "Bicho",
-  dark: "Siniestro",
-  dragon: "Dragón",
-  electric: "Eléctrico",
-  fairy: "Hada",
-  fighting: "Lucha",
-  fire: "Fuego",
-  flying: "Volador",
-  ghost: "Fantasma",
-  grass: "Planta",
-  ground: "Tierra",
-  ice: "Hielo",
-  normal: "Normal",
-  poison: "Veneno",
-  psychic: "Psíquico",
-  rock: "Roca",
-  steel: "Acero",
-  water: "Agua",
-};
-
-const statLabels = {
-  hp: "PS",
-  attack: "Ataque",
-  defense: "Defensa",
-  "special-attack": "At. especial",
-  "special-defense": "Def. especial",
-  speed: "Velocidad",
-};
-
-function capitalize(value) {
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
-function getTypeLabel(type) {
-  return typeLabels[type] ?? capitalize(type);
-}
+let menuItems = [];
 
 function setStatus(message, kind = "") {
-  statusMessage.replaceChildren();
   statusMessage.className = `status-message${kind ? ` status-${kind}` : ""}`;
-  if (message) statusMessage.textContent = message;
+  statusMessage.textContent = message;
 }
 
-async function fetchJSON(url) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`La API respondió con el estado ${response.status}.`);
-  }
-  return response.json();
-}
-
-function createNavigationButton(item, nested = false) {
-  const button = document.createElement("button");
-  button.className = nested ? "submenu-link" : "navigation-link";
-  button.type = "button";
-  button.dataset.viewId = item.id;
-  button.textContent = item.label;
-  button.addEventListener("click", () => openView(item.view));
-  return button;
-}
-
-function createNavigationGroup(label, id, children) {
-  const listItem = document.createElement("li");
-  listItem.className = "has-submenu";
-  const trigger = document.createElement("button");
-  trigger.className = "navigation-link submenu-trigger";
-  trigger.type = "button";
-  trigger.setAttribute("aria-expanded", "false");
-
-  const triggerLabel = document.createElement("span");
-  triggerLabel.textContent = label;
-  const chevron = document.createElement("span");
-  chevron.className = "chevron";
-  chevron.setAttribute("aria-hidden", "true");
-  chevron.textContent = "⌄";
-  trigger.append(triggerLabel, chevron);
-
-  const submenu = document.createElement("ul");
-  submenu.className = "submenu";
-  submenu.setAttribute("aria-label", label);
-  for (const child of children) {
-    const childItem = document.createElement("li");
-    childItem.append(createNavigationButton(child, true));
-    submenu.append(childItem);
-  }
-
-  trigger.addEventListener("click", () => {
-    const expanded = trigger.getAttribute("aria-expanded") === "true";
-    closeSubmenus();
-    trigger.setAttribute("aria-expanded", String(!expanded));
-    listItem.classList.toggle("submenu-open", !expanded);
+function flattenItems(items = menuItems, result = []) {
+  items.forEach((item) => {
+    result.push(item);
+    flattenItems(item.hijos ?? [], result);
   });
-
-  listItem.dataset.groupId = id;
-  listItem.append(trigger, submenu);
-  return listItem;
+  return result;
 }
 
-function createNavigation() {
-  navigationList.replaceChildren();
-  const collections = [
-    { id: "all", label: "N.º 001–151 · Todos", start: 1, end: 151 },
-    { id: "range-1", label: "N.º 001–050", start: 1, end: 50 },
-    { id: "range-2", label: "N.º 051–100", start: 51, end: 100 },
-    { id: "range-3", label: "N.º 101–151", start: 101, end: 151 },
-  ].map((range) => ({
-    id: range.id,
-    label: range.label,
-    view: { kind: "collection", start: range.start, end: range.end, title: range.label },
-  }));
-  navigationList.append(createNavigationGroup("Colección", "collection", collections));
+function sanitizeText(value) {
+  return value.replace(/[<>]/g, "").trim();
+}
 
-  if (state.types.length) {
-    const typeOptions = state.types.map((type) => ({
-      id: `type-${type.name}`,
-      label: getTypeLabel(type.name),
-      view: { kind: "type", type: type.name, title: getTypeLabel(type.name) },
-    }));
-    navigationList.append(createNavigationGroup("Tipos", "types", typeOptions));
+function isValidLink(value) {
+  if (!value) return false;
+  if (/^\/(?!\/)/.test(value) || /^#/.test(value)) return true;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
   }
+}
 
-  const favoriteItem = document.createElement("li");
-  favoriteItem.append(
-    createNavigationButton({
-      id: "favorites",
-      label: "★ Favoritos",
-      view: { kind: "favorites", title: "Mis favoritos" },
-    }),
-  );
-  navigationList.append(favoriteItem);
+function findItem(id, items = menuItems) {
+  for (const item of items) {
+    if (item.id === id) return item;
+    const found = findItem(id, item.hijos ?? []);
+    if (found) return found;
+  }
+  return null;
+}
 
-  const allButton = navigationList.querySelector('[data-view-id="all"]');
-  allButton?.classList.add("is-active");
-  allButton?.setAttribute("aria-current", "page");
+function removeItem(id, items = menuItems) {
+  const index = items.findIndex((item) => item.id === id);
+  if (index >= 0) {
+    items.splice(index, 1);
+    return true;
+  }
+  for (const item of items) {
+    if (removeItem(id, item.hijos ?? [])) return true;
+  }
+  return false;
+}
+
+function saveMenu() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ menu: menuItems }));
 }
 
 function closeSubmenus() {
@@ -171,225 +78,6 @@ function closeSubmenus() {
   });
 }
 
-function getBasePokemon() {
-  const view = state.currentView;
-  if (view.kind === "type") return state.typePokemon;
-  if (view.kind === "favorites") {
-    return state.pokemon.filter((pokemon) => state.favorites.has(pokemon.id));
-  }
-  return state.pokemon.filter((pokemon) => pokemon.id >= view.start && pokemon.id <= view.end);
-}
-
-function getFilteredPokemon() {
-  const query = state.searchTerm.trim().toLocaleLowerCase();
-  return getBasePokemon().filter((pokemon) => {
-    return (
-      !query ||
-      pokemon.name.includes(query) ||
-      String(pokemon.id).padStart(3, "0").includes(query.replace(/^#/, ""))
-    );
-  });
-}
-
-function createPokemonCard(pokemon) {
-  const card = document.createElement("article");
-  card.className = "pokemon-card";
-  card.style.setProperty("--card-accent", getCardAccent(pokemon.id));
-
-  const openButton = document.createElement("button");
-  openButton.className = "pokemon-card-main";
-  openButton.type = "button";
-  openButton.setAttribute("aria-label", `Ver ficha de ${pokemon.name}, número ${pokemon.id}`);
-
-  const number = document.createElement("span");
-  number.className = "pokemon-number";
-  number.textContent = `#${String(pokemon.id).padStart(3, "0")}`;
-
-  const imageFrame = document.createElement("span");
-  imageFrame.className = "pokemon-image-frame";
-  const image = document.createElement("img");
-  image.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`;
-  image.alt = "";
-  image.loading = "lazy";
-  image.addEventListener("error", () => image.remove(), { once: true });
-  imageFrame.append(image);
-
-  const name = document.createElement("span");
-  name.className = "pokemon-name";
-  name.textContent = pokemon.name;
-  const prompt = document.createElement("span");
-  prompt.className = "card-prompt";
-  prompt.textContent = "Ver ficha  ↗";
-  openButton.append(number, imageFrame, name, prompt);
-  openButton.addEventListener("click", () => showPokemonDetails(pokemon));
-
-  const favoriteButton = document.createElement("button");
-  favoriteButton.className = "favorite-button";
-  favoriteButton.type = "button";
-  favoriteButton.setAttribute(
-    "aria-label",
-    state.favorites.has(pokemon.id) ? `Quitar ${pokemon.name} de favoritos` : `Agregar ${pokemon.name} a favoritos`,
-  );
-  favoriteButton.setAttribute("aria-pressed", String(state.favorites.has(pokemon.id)));
-  favoriteButton.textContent = state.favorites.has(pokemon.id) ? "★" : "☆";
-  favoriteButton.addEventListener("click", () => toggleFavorite(pokemon));
-  card.append(openButton, favoriteButton);
-  return card;
-}
-
-function getCardAccent(id) {
-  const accents = ["#d9edeb", "#f7e6bd", "#e7e1f4", "#e8ead5", "#f3dfe0", "#dce8f4"];
-  return accents[id % accents.length];
-}
-
-function renderPagination(pageCount) {
-  pagination.replaceChildren();
-  if (pageCount <= 1) return;
-
-  const previous = createPageButton("←", state.currentPage - 1, "Página anterior");
-  previous.disabled = state.currentPage === 1;
-  pagination.append(previous);
-
-  for (let page = 1; page <= pageCount; page += 1) {
-    const button = createPageButton(String(page), page, `Página ${page}`);
-    if (page === state.currentPage) {
-      button.classList.add("is-current");
-      button.setAttribute("aria-current", "page");
-    }
-    pagination.append(button);
-  }
-
-  const next = createPageButton("→", state.currentPage + 1, "Página siguiente");
-  next.disabled = state.currentPage === pageCount;
-  pagination.append(next);
-}
-
-function createPageButton(label, page, accessibleName) {
-  const button = document.createElement("button");
-  button.className = "page-button";
-  button.type = "button";
-  button.textContent = label;
-  button.setAttribute("aria-label", accessibleName);
-  button.addEventListener("click", () => {
-    state.currentPage = page;
-    renderPokemon();
-    document.querySelector("#pokedex").scrollIntoView({ behavior: "smooth", block: "start" });
-  });
-  return button;
-}
-
-function renderPokemon() {
-  const filtered = getFilteredPokemon();
-  const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
-  state.currentPage = Math.max(1, Math.min(state.currentPage, pageCount || 1));
-  const start = (state.currentPage - 1) * PAGE_SIZE;
-  const currentPagePokemon = filtered.slice(start, start + PAGE_SIZE);
-
-  pokemonGrid.replaceChildren();
-  pokemonGrid.setAttribute("aria-busy", "false");
-  if (currentPagePokemon.length) {
-    currentPagePokemon.forEach((pokemon) => pokemonGrid.append(createPokemonCard(pokemon)));
-  } else {
-    const emptyState = document.createElement("div");
-    emptyState.className = "empty-state";
-    const title = document.createElement("h4");
-    title.textContent = state.currentView.kind === "favorites" ? "Aún no tienes favoritos" : "No encontramos Pokémon";
-    const copy = document.createElement("p");
-    copy.textContent =
-      state.currentView.kind === "favorites"
-        ? "Marca una estrella en cualquier ficha y aparecerá aquí."
-        : "Prueba con otro nombre, número o filtro.";
-    emptyState.append(title, copy);
-    pokemonGrid.append(emptyState);
-  }
-
-  resultsTitle.textContent = state.currentView.title ?? "Pokédex completa";
-  resultsOverline.textContent =
-    state.currentView.kind === "type"
-      ? "FILTRO POR TIPO"
-      : state.currentView.kind === "favorites"
-        ? "MI COLECCIÓN"
-        : "COLECCIÓN KANTO";
-  resultsCount.textContent = `${filtered.length} Pokémon`;
-  renderPagination(pageCount);
-}
-
-async function openView(view) {
-  state.currentView = view;
-  state.currentPage = 1;
-  state.searchTerm = "";
-  searchInput.value = "";
-  closeSubmenus();
-  navigationList.querySelectorAll("[data-view-id]").forEach((button) => {
-    const isActive = button.dataset.viewId === getViewId(view);
-    button.classList.toggle("is-active", isActive);
-    if (isActive) button.setAttribute("aria-current", "page");
-    else button.removeAttribute("aria-current");
-  });
-
-  if (view.kind === "type") {
-    const requestId = ++state.requestId;
-    const cached = state.typeCache.get(view.type);
-    if (cached) {
-      state.typePokemon = cached;
-    } else {
-      state.typePokemon = [];
-      resultsTitle.textContent = `Tipo ${view.title}`;
-      pokemonGrid.replaceChildren(createLoadingState());
-      pokemonGrid.setAttribute("aria-busy", "true");
-      setStatus(`Consultando Pokémon de tipo ${view.title} en PokéAPI...`);
-      try {
-        const typeData = await fetchJSON(`${API_BASE}/type/${encodeURIComponent(view.type)}`);
-        const availableIds = new Set(state.pokemon.map((pokemon) => pokemon.id));
-        state.typePokemon = typeData.pokemon
-          .map(({ pokemon }) => {
-            const id = extractId(pokemon.url);
-            return state.pokemon.find((entry) => entry.id === id);
-          })
-          .filter((pokemon) => pokemon && availableIds.has(pokemon.id))
-          .sort((a, b) => a.id - b.id);
-        state.typeCache.set(view.type, state.typePokemon);
-      } catch (error) {
-        if (requestId !== state.requestId) return;
-        pokemonGrid.setAttribute("aria-busy", "false");
-        setStatus(`No se pudo cargar el filtro de tipo ${view.title}: ${error.message}`, "error");
-        renderPokemon();
-        return;
-      }
-      if (requestId !== state.requestId) return;
-    }
-  }
-
-  state.requestId += 1;
-  setStatus("");
-  renderPokemon();
-  closeMobileNavigation();
-}
-
-function getViewId(view) {
-  if (view.kind === "type") return `type-${view.type}`;
-  if (view.kind === "favorites") return "favorites";
-  if (view.start === 1 && view.end === 151) return "all";
-  if (view.start === 1) return "range-1";
-  if (view.start === 51) return "range-2";
-  return "range-3";
-}
-
-function extractId(url) {
-  const match = url.match(/\/(\d+)\/?$/);
-  return match ? Number(match[1]) : 0;
-}
-
-function createLoadingState() {
-  const loading = document.createElement("div");
-  loading.className = "loading-state";
-  const spinner = document.createElement("span");
-  spinner.className = "loading-spinner";
-  spinner.setAttribute("aria-hidden", "true");
-  loading.append(spinner);
-  return loading;
-}
-
 function closeMobileNavigation() {
   if (!window.matchMedia("(max-width: 760px)").matches) return;
   primaryNavigation.classList.remove("navigation-open");
@@ -397,210 +85,262 @@ function closeMobileNavigation() {
   menuToggle.setAttribute("aria-label", "Abrir menú");
 }
 
-function toggleFavorite(pokemon) {
-  if (state.favorites.has(pokemon.id)) state.favorites.delete(pokemon.id);
-  else state.favorites.add(pokemon.id);
-  try {
-    localStorage.setItem("pokeatlas-favorites", JSON.stringify([...state.favorites]));
-  } catch (error) {
-    setStatus(`No se pudieron guardar los favoritos en este navegador: ${error.message}`, "error");
+function navigateToLink(link) {
+  if (/^https?:\/\//.test(link)) {
+    window.open(link, "_blank", "noopener,noreferrer");
+  } else {
+    window.location.hash = link.replace(/^\/?/, "");
   }
-  renderPokemon();
+  closeMobileNavigation();
+  closeSubmenus();
 }
 
-function loadFavorites() {
-  try {
-    const saved = JSON.parse(localStorage.getItem("pokeatlas-favorites") ?? "[]");
-    if (!Array.isArray(saved) || saved.some((id) => !Number.isInteger(id))) {
-      throw new Error("El formato guardado no es válido.");
-    }
-    state.favorites = new Set(saved);
-    return "";
-  } catch (error) {
-    state.favorites = new Set();
-    return `No se pudieron recuperar los favoritos guardados: ${error.message}`;
+function createNavigationButton(item, nested = false) {
+  const button = document.createElement("button");
+  button.className = nested ? "submenu-link" : "navigation-link";
+  button.type = "button";
+
+  if (item.icono) {
+    const icon = document.createElement("span");
+    icon.className = "navigation-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = item.icono;
+    button.append(icon);
   }
+
+  button.append(document.createTextNode(item.nombre));
+  button.addEventListener("click", () => navigateToLink(item.enlace));
+  return button;
 }
 
-function createDetailStat(stat) {
+function createNavigationGroup(item) {
+  const listItem = document.createElement("li");
+  listItem.className = "has-submenu";
+
+  const trigger = document.createElement("button");
+  trigger.className = "navigation-link submenu-trigger";
+  trigger.type = "button";
+  trigger.setAttribute("aria-expanded", "false");
+
+  const triggerLabel = document.createElement("span");
+  if (item.icono) {
+    const icon = document.createElement("span");
+    icon.className = "navigation-icon";
+    icon.setAttribute("aria-hidden", "true");
+    icon.textContent = item.icono;
+    triggerLabel.append(icon);
+  }
+  triggerLabel.append(document.createTextNode(item.nombre));
+
+  const chevron = document.createElement("span");
+  chevron.className = "chevron";
+  chevron.setAttribute("aria-hidden", "true");
+  chevron.textContent = "⌄";
+  trigger.append(triggerLabel, chevron);
+
+  const submenu = document.createElement("ul");
+  submenu.className = "submenu";
+  submenu.setAttribute("aria-label", item.nombre);
+  item.hijos.forEach((child) => {
+    const childItem = document.createElement("li");
+    childItem.append(createNavigationButton(child, true));
+    submenu.append(childItem);
+  });
+
+  trigger.addEventListener("click", () => {
+    const expanded = trigger.getAttribute("aria-expanded") === "true";
+    closeSubmenus();
+    trigger.setAttribute("aria-expanded", String(!expanded));
+    listItem.classList.toggle("submenu-open", !expanded);
+  });
+
+  listItem.append(trigger, submenu);
+  return listItem;
+}
+
+function renderNavigation() {
+  navigationList.replaceChildren();
+  menuItems.forEach((item) => {
+    const listItem = (item.hijos ?? []).length
+      ? createNavigationGroup(item)
+      : document.createElement("li");
+    if (!(item.hijos ?? []).length) listItem.append(createNavigationButton(item));
+    navigationList.append(listItem);
+  });
+  closeSubmenus();
+}
+
+function updateParentOptions() {
+  const editingId = Number(editId.value);
+  parentInput.replaceChildren();
+  parentInput.append(new Option("Ninguna (nivel principal)", ""));
+  flattenItems().forEach((item) => {
+    if (item.id === editingId) return;
+    const descendants = flattenItems(item.hijos ?? []);
+    if (editingId && descendants.some((descendant) => descendant.id === editingId)) return;
+    parentInput.append(new Option(item.nombre, String(item.id)));
+  });
+}
+
+function createTreeItem(item, level = 0) {
   const row = document.createElement("div");
-  row.className = "stat-row";
-  const label = document.createElement("span");
-  label.className = "stat-label";
-  label.textContent = statLabels[stat.stat.name] ?? capitalize(stat.stat.name);
-  const value = document.createElement("span");
-  value.className = "stat-value";
-  value.textContent = String(stat.base_stat);
-  const track = document.createElement("span");
-  track.className = "stat-track";
-  const bar = document.createElement("span");
-  bar.className = "stat-bar";
-  bar.style.width = `${Math.min(100, (stat.base_stat / 180) * 100)}%`;
-  track.append(bar);
-  row.append(label, value, track);
+  row.className = "menu-tree-item";
+  row.style.setProperty("--level", String(level));
+
+  const icon = document.createElement("span");
+  icon.className = "tree-icon";
+  icon.textContent = item.icono || "•";
+
+  const copy = document.createElement("div");
+  copy.className = "tree-copy";
+  const name = document.createElement("strong");
+  name.textContent = item.nombre;
+  const link = document.createElement("span");
+  link.textContent = item.enlace;
+  copy.append(name, link);
+
+  const actions = document.createElement("div");
+  actions.className = "tree-actions";
+  const edit = document.createElement("button");
+  edit.type = "button";
+  edit.textContent = "Editar";
+  edit.addEventListener("click", () => beginEdit(item));
+  const remove = document.createElement("button");
+  remove.type = "button";
+  remove.className = "delete-button";
+  remove.textContent = "Eliminar";
+  remove.addEventListener("click", () => deleteItem(item));
+  actions.append(edit, remove);
+
+  row.append(icon, copy, actions);
+
+  if (item.hijos?.length) {
+    item.hijos.forEach((child) => row.append(createTreeItem(child, level + 1)));
+  }
   return row;
 }
 
-function createMeasurement(label, value) {
-  const field = document.createElement("span");
-  const name = document.createElement("b");
-  name.textContent = label;
-  field.append(name, document.createTextNode(value));
-  return field;
+function renderMenuTree() {
+  menuTree.replaceChildren();
+  menuItems.forEach((item) => menuTree.append(createTreeItem(item)));
+  updateParentOptions();
 }
 
-async function showPokemonDetails(pokemon) {
-  pokemonDialog.showModal();
-  pokemonDetail.setAttribute("aria-busy", "true");
-  pokemonDetail.replaceChildren(createLoadingState());
+function resetForm() {
+  form.reset();
+  editId.value = "";
+  formTitle.textContent = "Agregar opción";
+  cancelEdit.hidden = true;
+  formError.textContent = "";
+  updateParentOptions();
+}
 
-  try {
-    const [details, species] = await Promise.all([
-      fetchJSON(`${API_BASE}/pokemon/${pokemon.id}`),
-      fetchJSON(`${API_BASE}/pokemon-species/${pokemon.id}`),
-    ]);
-    const spanishName = species.names.find((entry) => entry.language.name === "es")?.name;
-    const spanishDescription = species.flavor_text_entries.find(
-      (entry) => entry.language.name === "es",
-    )?.flavor_text;
-    const imageUrl =
-      details.sprites.other["official-artwork"].front_default ??
-      details.sprites.front_default ??
-      `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
+function beginEdit(item) {
+  editId.value = String(item.id);
+  nameInput.value = item.nombre;
+  linkInput.value = item.enlace;
+  iconInput.value = item.icono ?? "";
+  formTitle.textContent = "Modificar opción";
+  cancelEdit.hidden = false;
+  formError.textContent = "";
+  updateParentOptions();
 
-    pokemonDetail.replaceChildren();
-    pokemonDetail.setAttribute("aria-busy", "false");
+  let parentId = null;
+  flattenItems().forEach((candidate) => {
+    if ((candidate.hijos ?? []).some((child) => child.id === item.id)) parentId = candidate.id;
+  });
+  parentInput.value = parentId ? String(parentId) : "";
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  nameInput.focus();
+}
 
-    const art = document.createElement("div");
-    art.className = "detail-art";
-    art.style.setProperty("--card-accent", getCardAccent(pokemon.id));
-    const image = document.createElement("img");
-    image.src = imageUrl;
-    image.alt = spanishName ?? pokemon.name;
-    art.append(image);
+function deleteItem(item) {
+  if (!window.confirm(`¿Eliminar "${item.nombre}"${item.hijos?.length ? " y sus subopciones" : ""}?`)) return;
+  removeItem(item.id);
+  saveMenu();
+  renderAll();
+  resetForm();
+  setStatus(`Se eliminó "${item.nombre}".`);
+}
 
-    const copy = document.createElement("div");
-    copy.className = "detail-copy";
-    const number = document.createElement("p");
-    number.className = "pokemon-number";
-    number.textContent = `N.º ${String(pokemon.id).padStart(3, "0")}`;
-    const title = document.createElement("h2");
-    title.id = "detail-name";
-    title.textContent = spanishName ?? capitalize(pokemon.name);
-    const english = document.createElement("p");
-    english.className = "detail-english";
-    english.textContent = capitalize(pokemon.name);
-    const description = document.createElement("p");
-    description.className = "detail-description";
-    description.textContent = spanishDescription?.replace(/[\f\n\r]+/g, " ") ?? "Ficha de Pokémon consultada en PokéAPI.";
+function renderAll() {
+  renderNavigation();
+  renderMenuTree();
+}
 
-    const types = document.createElement("div");
-    types.className = "detail-types";
-    for (const { type } of details.types) {
-      const badge = document.createElement("span");
-      badge.className = `type-badge type-${type.name}`;
-      badge.textContent = getTypeLabel(type.name);
-      types.append(badge);
-    }
+form.addEventListener("submit", (event) => {
+  event.preventDefault();
+  formError.textContent = "";
 
-    const measurements = document.createElement("div");
-    measurements.className = "measurements";
-    measurements.append(
-      createMeasurement("Altura", `${(details.height / 10).toFixed(1)} m`),
-      createMeasurement("Peso", `${(details.weight / 10).toFixed(1)} kg`),
-    );
+  const name = sanitizeText(nameInput.value);
+  const link = linkInput.value.trim();
+  const icon = sanitizeText(iconInput.value);
 
-    const statsHeading = document.createElement("h3");
-    statsHeading.className = "stats-heading";
-    statsHeading.textContent = "Estadísticas base";
-    const stats = document.createElement("div");
-    stats.className = "stats-list";
-    details.stats.forEach((stat) => stats.append(createDetailStat(stat)));
-
-    copy.append(number, title, english, description, types, measurements, statsHeading, stats);
-    pokemonDetail.append(art, copy);
-  } catch (error) {
-    pokemonDetail.setAttribute("aria-busy", "false");
-    pokemonDetail.replaceChildren();
-    const errorState = document.createElement("div");
-    errorState.className = "detail-error";
-    const heading = document.createElement("h2");
-    heading.textContent = "No se pudo cargar la ficha";
-    const message = document.createElement("p");
-    message.textContent = error.message;
-    errorState.append(heading, message);
-    pokemonDetail.append(errorState);
+  if (!name) {
+    formError.textContent = "El nombre es obligatorio.";
+    nameInput.focus();
+    return;
   }
-}
+  if (!isValidLink(link)) {
+    formError.textContent = "Ingresa un enlace válido: ruta (/servicios), ancla (#inicio) o URL (https://...).";
+    linkInput.focus();
+    return;
+  }
 
-function showInitialError(error) {
-  pokemonGrid.setAttribute("aria-busy", "false");
-  pokemonGrid.replaceChildren();
-  setStatus(`No se pudo conectar con PokéAPI: ${error.message}`, "error");
+  const editingId = Number(editId.value);
+  const parentId = Number(parentInput.value) || null;
+  const existing = editingId ? findItem(editingId) : null;
 
-  const retry = document.createElement("button");
-  retry.className = "retry-button";
-  retry.type = "button";
-  retry.textContent = "Volver a intentar";
-  retry.addEventListener("click", loadInitialData);
-  pokemonGrid.append(retry);
-  resultsTitle.textContent = "No se pudo cargar la Pokédex";
-}
-
-async function loadInitialData() {
-  pokemonGrid.replaceChildren(createLoadingState());
-  pokemonGrid.setAttribute("aria-busy", "true");
-  setStatus("Conectando con PokéAPI...");
-
-  try {
-    const [pokemonData, typeResult] = await Promise.allSettled([
-      fetchJSON(`${API_BASE}/pokemon?limit=${FIRST_GENERATION_SIZE}`),
-      fetchJSON(`${API_BASE}/type`),
-    ]);
-    if (pokemonData.status === "rejected") throw pokemonData.reason;
-    if (!Array.isArray(pokemonData.value.results)) {
-      throw new Error("La respuesta de Pokémon no tiene el formato esperado.");
+  if (parentId) {
+    const parent = findItem(parentId);
+    if (!parent) {
+      formError.textContent = "La opción padre seleccionada no existe.";
+      return;
     }
-    state.pokemon = pokemonData.value.results
-      .map((entry) => ({ name: entry.name, id: extractId(entry.url) }))
-      .filter((pokemon) => pokemon.id > 0 && pokemon.id <= FIRST_GENERATION_SIZE)
-      .sort((a, b) => a.id - b.id);
+  }
 
-    if (typeResult.status === "fulfilled" && Array.isArray(typeResult.value.results)) {
-      state.types = typeResult.value.results.filter(
-        (type) => type.name !== "unknown" && type.name !== "shadow",
-      );
-    } else if (typeResult.status === "rejected") {
-      setStatus(`La colección se cargó, pero no se pudieron obtener los tipos: ${typeResult.reason.message}`, "error");
-    }
+  if (existing) {
+    removeItem(editingId);
+    existing.nombre = name;
+    existing.enlace = link;
+    existing.icono = icon;
+    existing.hijos ??= [];
 
-    const favoritesWarning = loadFavorites();
-    createNavigation();
-    state.currentView = { kind: "collection", start: 1, end: FIRST_GENERATION_SIZE, title: "Pokédex completa" };
-    renderPokemon();
-    if (typeResult.status === "rejected") {
-      setStatus(`La colección se cargó, pero no se pudieron obtener los tipos: ${typeResult.reason.message}`, "error");
-    } else if (favoritesWarning) {
-      setStatus(favoritesWarning, "error");
+    if (parentId) {
+      const parent = findItem(parentId);
+      parent.hijos ??= [];
+      parent.hijos.push(existing);
     } else {
-      setStatus("");
+      menuItems.push(existing);
     }
-  } catch (error) {
-    showInitialError(error);
-  }
-}
+    setStatus(`Se modificó "${name}".`);
+  } else {
+    const nextId = flattenItems().reduce((highest, item) => Math.max(highest, item.id), 0) + 1;
+    const newItem = { id: nextId, nombre: name, enlace: link, icono: icon, hijos: [] };
 
-searchInput.addEventListener("input", () => {
-  state.searchTerm = searchInput.value;
-  state.currentPage = 1;
-  renderPokemon();
+    if (parentId) {
+      const parent = findItem(parentId);
+      parent.hijos ??= [];
+      parent.hijos.push(newItem);
+    } else {
+      menuItems.push(newItem);
+    }
+    setStatus(`Se agregó "${name}".`);
+  }
+
+  saveMenu();
+  renderAll();
+  resetForm();
 });
 
-document.addEventListener("keydown", (event) => {
-  if (event.key === "/" && !["INPUT", "TEXTAREA"].includes(document.activeElement.tagName)) {
-    event.preventDefault();
-    searchInput.focus();
-  }
+cancelEdit.addEventListener("click", resetForm);
+
+resetMenu.addEventListener("click", async () => {
+  if (!window.confirm("¿Restaurar las opciones originales de menu.json?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  await loadMenu();
+  resetForm();
+  setStatus("Se restauró el menú original.");
 });
 
 menuToggle.addEventListener("click", () => {
@@ -610,9 +350,39 @@ menuToggle.addEventListener("click", () => {
   primaryNavigation.classList.toggle("navigation-open", !isExpanded);
 });
 
-document.querySelector("#dialog-close").addEventListener("click", () => pokemonDialog.close());
-pokemonDialog.addEventListener("click", (event) => {
-  if (event.target === pokemonDialog) pokemonDialog.close();
+document.addEventListener("click", (event) => {
+  if (!event.target.closest(".has-submenu")) closeSubmenus();
 });
 
-loadInitialData();
+async function loadMenu() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed.menu)) {
+        menuItems = parsed.menu;
+        renderAll();
+        setStatus("Menú cargado desde los datos guardados.");
+        return;
+      }
+    } catch {
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }
+
+  try {
+    const response = await fetch("menu.json");
+    if (!response.ok) throw new Error(`No se pudo cargar menu.json (${response.status}).`);
+    const data = await response.json();
+    if (!Array.isArray(data.menu)) throw new Error("menu.json no contiene una lista válida.");
+    menuItems = data.menu;
+    renderAll();
+    setStatus("Menú cargado desde menu.json.");
+  } catch (error) {
+    menuItems = [];
+    renderAll();
+    setStatus(error.message, "error");
+  }
+}
+
+loadMenu();

@@ -3,26 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Explora los primeros 151 Pokémon con datos en vivo de PokéAPI."
-    />
+    <meta name="description" content="Ejercicio de menú dinámico administrable con JSON." />
     <meta name="theme-color" content="#e94b52" />
-    <title>PokéAtlas | Explora la Pokédex</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Press+Start+2P&display=swap"
-      rel="stylesheet"
-    />
+    <title>Menú Dinámico</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
   <body>
     <header class="site-header">
-      <a class="brand" href="#" aria-label="PokéAtlas, inicio">
-        <span class="pokeball-logo" aria-hidden="true"></span>
-        <span>poké<span>atlas</span></span>
+      <a class="brand" href="#inicio" aria-label="Menú dinámico, inicio">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>menú<span>dinámico</span></span>
       </a>
       <button
         class="menu-toggle"
@@ -37,82 +28,76 @@
       <nav class="primary-navigation" id="primary-navigation" aria-label="Menú principal">
         <ul class="navigation-list" id="navigation-list"></ul>
       </nav>
-      <a class="header-cta" href="#pokedex">Ver Pokédex <span aria-hidden="true">↓</span></a>
+      <a class="header-cta" href="#administrador">Administrar <span aria-hidden="true">↓</span></a>
     </header>
 
     <main>
-      <section class="hero" aria-labelledby="hero-title">
+      <section class="hero" id="inicio" aria-labelledby="hero-title">
         <div class="hero-copy">
-          <p class="eyebrow"><span class="eyebrow-dot"></span> Tu guía para atraparlos</p>
-          <h1 id="hero-title">El mundo Pokémon,<br />a un <em>clic.</em></h1>
-          <p>
-            Explora los primeros 151 Pokémon, descubre sus tipos y encuentra los datos de cada
-            criatura directamente desde PokéAPI.
-          </p>
-          <a class="button button-yellow" href="#pokedex">Explorar la Pokédex <span aria-hidden="true">↘</span></a>
+          <p class="eyebrow"><span class="eyebrow-dot"></span> Estructura JSON</p>
+          <h1 id="hero-title">Menú editable,<br />a un <em>clic.</em></h1>
+          <p>Agrega, modifica o elimina opciones sin cambiar el código fuente.</p>
+          <a class="button button-yellow" href="#administrador">Administrar menú <span aria-hidden="true">↘</span></a>
         </div>
-        <div class="hero-pokeball" aria-hidden="true">
-          <span class="pokeball-center"></span>
-        </div>
-        <div class="hero-caption"><span>01</span> DATOS EN VIVO · POKÉAPI</div>
+        <div class="hero-pokeball" aria-hidden="true"><span class="pokeball-center">M</span></div>
+        <div class="hero-caption"><span>01</span> DATOS LOCALES · JSON</div>
         <span class="hero-spark spark-one" aria-hidden="true">✳</span>
         <span class="hero-spark spark-two" aria-hidden="true">✦</span>
       </section>
 
-      <section class="pokedex-section" id="pokedex" aria-labelledby="section-title">
+      <section class="administrator" id="administrador" aria-labelledby="admin-title">
         <div class="section-topline">
           <div>
-            <p class="eyebrow eyebrow-dark"><span class="eyebrow-dot"></span> Tu próxima captura</p>
-            <h2 id="section-title">Explora la <em>Pokédex</em></h2>
+            <p class="eyebrow eyebrow-dark"><span class="eyebrow-dot"></span> Administración</p>
+            <h2 id="admin-title">Opciones del <em>menú</em></h2>
           </div>
-          <p class="section-description">
-            Filtra por tipo, busca por nombre o número y selecciona un Pokémon para ver su ficha.
-          </p>
+          <p class="section-description">Los cambios se aplican al menú inmediatamente y se guardan en este navegador.</p>
         </div>
 
-        <div class="search-row">
-          <label class="search-box" for="pokemon-search">
-            <span aria-hidden="true">⌕</span>
-            <input
-              id="pokemon-search"
-              type="search"
-              placeholder="Buscar Pokémon o número..."
-              autocomplete="off"
-            />
-            <kbd>/</kbd>
-          </label>
-          <div class="api-label"><span class="api-dot"></span> API pública · PokéAPI</div>
-        </div>
+        <div class="admin-layout">
+          <form class="menu-form" id="menu-form" novalidate>
+            <h3 id="form-title">Agregar opción</h3>
+            <input id="edit-id" type="hidden" />
+            <label for="menu-name">Nombre</label>
+            <input id="menu-name" name="nombre" type="text" maxlength="40" required placeholder="Ej. Productos" />
 
-        <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+            <label for="menu-link">Enlace</label>
+            <input id="menu-link" name="enlace" type="text" maxlength="200" required placeholder="/productos" />
 
-        <div class="results-heading">
-          <div>
-            <p class="results-overline" id="results-overline">COLECCIÓN KANTO</p>
-            <h3 id="results-title">Cargando Pokémon...</h3>
+            <label for="menu-icon">Icono <span>(opcional)</span></label>
+            <input id="menu-icon" name="icono" type="text" maxlength="6" placeholder="Ej. ★" />
+
+            <label for="menu-parent">Opción padre <span>(opcional)</span></label>
+            <select id="menu-parent" name="padre">
+              <option value="">Ninguna (nivel principal)</option>
+            </select>
+
+            <p class="form-error" id="form-error" role="alert"></p>
+            <div class="form-actions">
+              <button class="button-save" type="submit">Guardar opción</button>
+              <button class="button-reset" id="cancel-edit" type="button" hidden>Cancelar edición</button>
+            </div>
+          </form>
+
+          <div class="menu-manager">
+            <div class="manager-heading">
+              <h3>Opciones registradas</h3>
+              <button class="button-reset" id="reset-menu" type="button">Restaurar JSON</button>
+            </div>
+            <p class="status-message" id="status-message" role="status" aria-live="polite"></p>
+            <div class="menu-tree" id="menu-tree"></div>
           </div>
-          <p class="results-count" id="results-count"></p>
         </div>
-
-        <div class="pokemon-grid" id="pokemon-grid" aria-live="polite" aria-busy="true">
-          <div class="loading-state"><span class="loading-spinner" aria-hidden="true"></span></div>
-        </div>
-        <nav class="pagination" id="pagination" aria-label="Páginas de Pokémon"></nav>
       </section>
     </main>
 
     <footer class="site-footer">
-      <a class="brand footer-brand" href="#" aria-label="PokéAtlas, inicio">
-        <span class="pokeball-logo" aria-hidden="true"></span>
-        <span>poké<span>atlas</span></span>
+      <a class="brand footer-brand" href="#inicio" aria-label="Menú dinámico, inicio">
+        <span class="brand-mark" aria-hidden="true">M</span>
+        <span>menú<span>dinámico</span></span>
       </a>
-      <p>Un pequeño homenaje a grandes aventuras. <span aria-hidden="true">✳</span></p>
-      <p class="footer-caption">DATOS PROPORCIONADOS POR POKÉAPI</p>
+      <p>Ejercicio con estructura de datos JSON.</p>
+      <p class="footer-caption">SIN CONSUMO DE API</p>
     </footer>
-
-    <dialog class="pokemon-dialog" id="pokemon-dialog" aria-labelledby="detail-name">
-      <button class="dialog-close" id="dialog-close" type="button" aria-label="Cerrar ficha">×</button>
-      <div class="pokemon-detail" id="pokemon-detail"></div>
-    </dialog>
   </body>
 </html>

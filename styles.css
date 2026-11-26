@@ -957,6 +957,248 @@ button {
   to { transform: rotate(360deg); }
 }
 
+.brand-mark {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--red);
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+  box-shadow: 4px 4px 0 var(--yellow);
+}
+
+.navigation-icon,
+.tree-icon {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
+  font-family: monospace;
+  font-weight: 800;
+}
+
+.navigation-icon {
+  min-width: 14px;
+  color: var(--red);
+  font-size: 11px;
+}
+
+.hero-pokeball {
+  display: grid;
+  border: 12px solid #202b3d;
+  place-items: center;
+  background: #fff !important;
+}
+
+.hero-pokeball::before {
+  display: none;
+}
+
+.pokeball-center {
+  display: grid;
+  width: 34%;
+  aspect-ratio: 1;
+  place-items: center;
+  border: 8px solid #202b3d;
+  background: var(--yellow);
+  color: var(--ink);
+  font-size: clamp(24px, 4vw, 48px);
+  font-weight: 800;
+  box-shadow: none;
+}
+
+.administrator {
+  max-width: 1180px;
+  min-height: 520px;
+  margin: 0 auto;
+  padding: 62px 38px 75px;
+  scroll-margin-top: 20px;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 350px) 1fr;
+  gap: 24px;
+  margin-top: 30px;
+}
+
+.menu-form,
+.menu-manager {
+  border: 1px solid #e9e7e0;
+  border-radius: 10px;
+  background: white;
+}
+
+.menu-form {
+  align-self: start;
+  padding: 24px;
+}
+
+.menu-form h3,
+.manager-heading h3 {
+  margin: 0 0 20px;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.menu-form label {
+  display: block;
+  margin: 14px 0 7px;
+  color: #596476;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.menu-form label span {
+  color: #969daa;
+  font-weight: 500;
+}
+
+.menu-form input,
+.menu-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 11px;
+  border: 1px solid #e3e1da;
+  border-radius: 6px;
+  outline: none;
+  background: white;
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.menu-form input:focus,
+.menu-form select:focus {
+  border-color: #e87a7e;
+  box-shadow: 0 0 0 3px #e94b5214;
+}
+
+.form-error {
+  min-height: 18px;
+  margin: 10px 0 4px;
+  color: #ba373f;
+  font-size: 10px;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.button-save,
+.button-reset,
+.tree-actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.button-save {
+  background: var(--red);
+  color: white;
+}
+
+.button-reset {
+  border: 1px solid #e5e3dc;
+  background: white;
+  color: #687386;
+}
+
+.menu-manager {
+  min-width: 0;
+  padding: 24px;
+}
+
+.manager-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.manager-heading h3 {
+  margin: 0;
+}
+
+.menu-manager .status-message {
+  min-height: 18px;
+  margin: 0 0 12px;
+  color: #5a8b78;
+  font-size: 10px;
+}
+
+.menu-manager .status-error {
+  color: #ba373f;
+}
+
+.menu-tree {
+  display: grid;
+  gap: 7px;
+}
+
+.menu-tree-item {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 11px 10px calc(11px + var(--level) * 18px);
+  border: 1px solid #eeece6;
+  border-radius: 7px;
+  background: #fdfcf9;
+}
+
+.tree-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #fff1ee;
+  color: var(--red);
+  font-size: 13px;
+}
+
+.tree-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.tree-copy strong {
+  font-size: 11px;
+}
+
+.tree-copy span {
+  overflow: hidden;
+  color: #8b93a0;
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+.tree-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.tree-actions button {
+  min-height: 30px;
+  border: 1px solid #e4e2dc;
+  background: white;
+  color: #687386;
+}
+
+.tree-actions .delete-button {
+  border-color: #f1d3d5;
+  color: #ba373f;
+}
+
 @media (max-width: 900px) {
   .site-header {
     padding: 0 5%;
@@ -1092,6 +1334,15 @@ button {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
+
+  .administrator {
+    padding-right: 5%;
+    padding-left: 5%;
+  }
+
+  .admin-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1175,5 +1426,22 @@ button {
 
   .detail-copy h2 {
     font-size: 27px;
+  }
+
+  .administrator {
+    padding: 45px 6% 60px;
+  }
+
+  .menu-form,
+  .menu-manager {
+    padding: 18px;
+  }
+
+  .menu-tree-item {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .tree-actions {
+    grid-column: 2;
   }
 }
